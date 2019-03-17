@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Data Lake Serverless Template
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+
+  StageName:
+    Type: String
+    Default: prod
+    Description: The Lambda Function and API Gateway Stage
+
+
+Globals:  
+  Function:
+    Runtime: go1.x
+    MemorySize: 512
+    Timeout: 30
+    Tags:
+      author: vdparikh@gmail.com
+
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,DELETE,PUT,OPTIONS'"
+      AllowHeaders: "'Authorization,authorization,DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range'"
+      AllowOrigin: "'*'"
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
+  HelloApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: ./hello
+      Events:    
+        hello:
+          Type: Api
+          Properties:
+            Path: '/hello'
+            Method: get 
+            RestApiId: !Ref ApiGateway     
