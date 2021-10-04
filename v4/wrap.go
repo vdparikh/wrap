@@ -7,11 +7,31 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	wrap "github.com/vdparikh/wrap/v4"
-
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
+
+func FormatAPIResponse(statusCode int, headers http.Header, responseData string) (events.APIGatewayProxyResponse, error) {
+	responseHeaders := make(map[string]string)
+
+	responseHeaders["Content-Type"] = "application/json"
+	for key, value := range headers {
+		responseHeaders[key] = ""
+
+		if len(value) > 0 {
+			responseHeaders[key] = value[0]
+		}
+	}
+
+	responseHeaders["Access-Control-Allow-Origin"] = "*"
+	responseHeaders["Access-Control-Allow-Headers"] = "origin,Accept,Authorization,Content-Type"
+
+	return events.APIGatewayProxyResponse{
+		Body:       responseData,
+		Headers:    responseHeaders,
+		StatusCode: statusCode,
+	}, nil
+}
 
 // Route wraps echo server into Lambda Handler
 func Route(e *echo.Echo) func(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -34,9 +54,9 @@ func Route(e *echo.Echo) func(ctx context.Context, request events.APIGatewayProx
 		res := rec.Result()
 		responseBody, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return wrap.FormatAPIResponse(http.StatusInternalServerError, res.Header, err.Error())
+			return FormatAPIResponse(http.StatusInternalServerError, res.Header, err.Error())
 		}
 
-		return wrap.FormatAPIResponse(res.StatusCode, res.Header, string(responseBody))
+		return FormatAPIResponse(res.StatusCode, res.Header, string(responseBody))
 	}
 }
